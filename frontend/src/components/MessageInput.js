@@ -5,8 +5,10 @@ const MessageInput = ({ onSendMessage }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSendMessage(message);
-    setMessage('');
+    if (message.trim()) {
+      onSendMessage(message);
+      setMessage('');
+    }
   };
 
   return (
@@ -16,8 +18,11 @@ const MessageInput = ({ onSendMessage }) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type your message..."
+        aria-label="Message input"
       />
-      <button type="submit">Send</button>
+      <button type="submit" disabled={!message.trim()}>
+        Send
+      </button>
     </form>
   );
 };

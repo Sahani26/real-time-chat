@@ -9,42 +9,49 @@ const Message = require('./models/Message');
 const app = express();
 const server = http.createServer(app);
 
-// Configure allowed origins from environment variables
+// Configure allowed origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:3000']; // Default to localhost for development
+  : ['http://localhost:3000'];
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: (origin, callback) => {
+  origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS']
 };
 
-// Apply CORS middleware
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Socket.IO with CORS
+// Socket.IO configuration
 const io = socketIo(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ['websocket', 'polling'], // Enable both transports
-  allowEIO3: true // For Socket.IO v2 client compatibility
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
-// MongoDB Connection with enhanced options
+// WebSocket headers
+io.engine.on("headers", (headers, req) => {
+  if (allowedOrigins.includes(req.headers.origin)) {
+    headers["Access-Control-Allow-Origin"] = req.headers.origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  }
+});
+
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -54,36 +61,47 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => {
   console.error('MongoDB connection error:', err);
-  process.exit(1); // Exit process if DB connection fails
+  process.exit(1);
 });
 
-// Socket.IO Connection with error handling
+// Socket.IO Connection
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
-  // Join a room
-  socket.on('join_room', (room) => {
-    if (typeof room !== 'string') {
-      return socket.emit('error', 'Invalid room format');
-    }
-    
-    socket.join(room);
-    console.log(`User ${socket.id} joined room: ${room}`);
-    
-    // Send previous messages in the room
-    Message.find({ room })
-      .sort({ createdAt: 1 })
-      .then(messages => {
-        socket.emit('previous_messages', messages);
-      })
-      .catch(err => {
-        console.error('Error fetching messages:', err);
-        socket.emit('error', 'Failed to load messages');
-      });
+  // Debug all incoming events
+  socket.onAny((event, ...args) => {
+    console.log(`Received ${event} with args:`, args);
   });
 
-  // Handle new messages with validation
-  socket.on('send_message', async (data) => {
+  // Join room handler
+  socket.on('join_room', (room, callback) => {
+    try {
+      if (typeof room !== 'string' || !room.trim()) {
+        throw new Error('Invalid room format');
+      }
+      
+      const roomName = room.substring(0, 50);
+      socket.join(roomName);
+      console.log(`User ${socket.id} joined room: ${roomName}`);
+      
+      Message.find({ room: roomName })
+        .sort({ createdAt: 1 })
+        .limit(100)
+        .then(messages => {
+          callback({ status: 'success', messages });
+        })
+        .catch(err => {
+          console.error('Error fetching messages:', err);
+          callback({ status: 'error', message: 'Failed to load messages' });
+        });
+    } catch (err) {
+      console.error('Error joining room:', err);
+      callback({ status: 'error', message: err.message });
+    }
+  });
+
+  // Message handler
+  socket.on('send_message', async (data, callback) => {
     try {
       if (!data || typeof data !== 'object') {
         throw new Error('Invalid message format');
@@ -95,40 +113,33 @@ io.on('connection', (socket) => {
         throw new Error('Missing required fields');
       }
       
-      // Save message to database
       const message = new Message({ 
-        user: user.toString().substring(0, 50), // Basic sanitization
+        user: user.toString().substring(0, 50),
         text: text.toString().substring(0, 500),
         room: room.toString().substring(0, 50)
       });
       
       await message.save();
-      
-      // Broadcast the message to everyone in the room
-      io.to(room).emit('receive_message', message);
+      io.to(message.room).emit('receive_message', message);
+      callback({ status: 'success' });
     } catch (err) {
       console.error('Error handling message:', err);
-      socket.emit('error', 'Failed to send message');
+      callback({ status: 'error', message: err.message });
     }
   });
 
-  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
 });
 
-// API route to get all messages with error handling
+// API Routes
 app.get('/api/messages/:room', async (req, res) => {
   try {
-    if (!req.params.room || typeof req.params.room !== 'string') {
-      return res.status(400).json({ error: 'Invalid room parameter' });
-    }
+    const room = req.params.room?.toString().substring(0, 50);
+    if (!room) return res.status(400).json({ error: 'Invalid room parameter' });
     
-    const messages = await Message.find({ room: req.params.room })
-      .sort({ createdAt: 1 })
-      .limit(100); // Limit to 100 most recent messages
-    
+    const messages = await Message.find({ room }).sort({ createdAt: 1 }).limit(100);
     res.json(messages);
   } catch (err) {
     console.error('Error fetching messages:', err);
@@ -136,29 +147,29 @@ app.get('/api/messages/:room', async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
+  res.status(200).json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: 'Internal server error' });
 });
 
+// Server start
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
-});
-
-// Handle uncaught exceptions
+// Process handlers
+process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err));
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   process.exit(1);

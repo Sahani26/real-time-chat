@@ -8,6 +8,7 @@ const RoomSelector = ({ rooms, currentRoom, onChangeRoom }) => {
           key={room}
           className={room === currentRoom ? 'active' : ''}
           onClick={() => onChangeRoom(room)}
+          aria-label={`Join ${room} room`}
         >
           {room}
         </button>

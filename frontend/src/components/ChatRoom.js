@@ -1,73 +1,116 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import axios from 'axios';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import RoomSelector from './RoomSelector';
-import axios from 'axios';
 
-// Using environment variables
-const apiUrl = process.env.REACT_APP_API_URL;
-const socketUrl = process.env.REACT_APP_SOCKET_URL;
-
-const socket = io(socketUrl); // Now using environment variable
+const socket = io(process.env.REACT_APP_SOCKET_URL, {
+  withCredentials: true,
+  transports: ['websocket'],
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  timeout: 20000
+});
 
 const ChatRoom = ({ username }) => {
   const [messages, setMessages] = useState([]);
   const [currentRoom, setCurrentRoom] = useState('general');
+  const [isConnected, setIsConnected] = useState(false);
   const [rooms] = useState(['general', 'tech', 'gaming']);
+  const messagesEndRef = useRef(null);
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    // Join room when component mounts or room changes
-    socket.emit('join_room', currentRoom);
+    scrollToBottom();
+  }, [messages]);
 
-    // Fetch previous messages
-    const fetchMessages = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/messages/${currentRoom}`);
-        setMessages(response.data);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      }
+  useEffect(() => {
+    // Socket event listeners
+    const onConnect = () => {
+      setIsConnected(true);
+      console.log('Socket connected:', socket.id);
     };
 
-    fetchMessages();
+    const onDisconnect = () => {
+      setIsConnected(false);
+      console.log('Socket disconnected');
+    };
 
-    // Set up socket listeners
-    socket.on('receive_message', (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
+    const onConnectError = (err) => {
+      console.error('Connection error:', err);
+    };
 
-    socket.on('previous_messages', (messages) => {
-      setMessages(messages);
-    });
+    const onError = (err) => {
+      console.error('Socket error:', err);
+    };
 
-    // Clean up on unmount
+    const onReceiveMessage = (message) => {
+      setMessages(prev => [...prev, message]);
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
+    socket.on('error', onError);
+    socket.on('receive_message', onReceiveMessage);
+
+    // Join initial room
+    joinRoom(currentRoom);
+
     return () => {
-      socket.off('receive_message');
-      socket.off('previous_messages');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
+      socket.off('error', onError);
+      socket.off('receive_message', onReceiveMessage);
     };
-  }, [currentRoom]);
+  }, []);
+
+  const joinRoom = (room) => {
+    socket.emit('join_room', room, (response) => {
+      if (response.status === 'success') {
+        setMessages(response.messages || []);
+        setCurrentRoom(room);
+      } else {
+        console.error('Error joining room:', response.message);
+      }
+    });
+  };
 
   const sendMessage = (text) => {
-    if (text.trim()) {
-      socket.emit('send_message', {
-        user: username,
-        text,
-        room: currentRoom,
-      });
-    }
+    if (!text.trim()) return;
+
+    socket.emit('send_message', {
+      user: username,
+      text,
+      room: currentRoom
+    }, (response) => {
+      if (response.status !== 'success') {
+        console.error('Failed to send message:', response.message);
+      }
+    });
   };
 
   const changeRoom = (room) => {
-    setCurrentRoom(room);
-    setMessages([]);
+    if (room !== currentRoom) {
+      joinRoom(room);
+    }
   };
 
   return (
     <div className="chat-room">
+      <div className="connection-status">
+        {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+      </div>
       <h2>Chat Room: {currentRoom}</h2>
       <RoomSelector rooms={rooms} currentRoom={currentRoom} onChangeRoom={changeRoom} />
       <MessageList messages={messages} username={username} />
+      <div ref={messagesEndRef} />
       <MessageInput onSendMessage={sendMessage} />
     </div>
   );
