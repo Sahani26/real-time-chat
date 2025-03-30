@@ -1,0 +1,260 @@
+/* General Styles */
+ .chat-container {
+   padding: 20px;
+   font-family: Arial, sans-serif;
+      width: 701px;
+    margin: 0 auto;
+
+ }
+ 
+ .header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 20px;
+ }
+ 
+ .logout-btn {
+   background-color: red;
+   color: white;
+   padding: 5px 10px;
+   border: none;
+   border-radius: 5px;
+   cursor: pointer;
+ }
+ 
+ .messages-list {
+   list-style: none;
+   padding: 5px;
+   height: 500px;
+   overflow-y: auto;
+   margin-bottom: 20px;
+   border: 1px solid #ddd;
+   border-radius: 10px;
+   background-color: #fafafa;
+ }
+ 
+ .message-item {
+   padding: 10px;
+   margin: 5px 0;
+   border-radius: 5px;
+ }
+ 
+ .message-item:nth-child(odd) {
+   background-color: #f2f2f2;
+ }
+ 
+ .message-item:nth-child(even) {
+   background-color: #e6e6e6;
+ }
+ 
+ .input-section {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+ }
+ 
+ .message-input {
+   width: 100%;
+   padding: 10px;
+   border: 1px solid #ccc;
+   border-radius: 5px;
+ }
+ 
+ .send-btn {
+   background-color: #228b22;
+   color: white;
+   padding: 10px 20px;
+   border: none;
+   border-radius: 10px;
+   cursor: pointer;
+   transition: background-color 0.3s ease;
+ }
+ 
+ .send-btn:hover {
+   background-color: #1e7e1e;
+ }
+ .messages-list {
+   list-style: none;
+   padding: 5px;
+   height: 500px;  /* You can adjust this based on your preference */
+   overflow-y: auto;
+   margin-bottom: 20px;
+   border: 1px solid #ddd;
+   border-radius: 10px;
+   background-color: #fafafa;
+ }
+ 
+ .message-item {
+   padding: 10px;
+   margin: 5px 0;
+   border-radius: 5px;
+ }
+ 
+ .message-item:nth-child(odd) {
+   background-color: #f2f2f2;
+ }
+ 
+ .message-item:nth-child(even) {
+   background-color: #e6e6e6;
+ }
+/* Container for the login box */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #373636;
+}
+
+/* Box containing the login form */
+.login-box {
+  background-color: white;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Title */
+h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* Input field */
+.login-input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.login-input:focus {
+  border-color: #4facfe;
+  outline: none;
+}
+
+/* Button */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #253435;
+}
+
+/* Register link */
+.register-link {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+}
+
+.register-btn {
+  background: none;
+  border: none;
+  color: #4facfe;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.register-btn:hover {
+  color:  #eeeef7;
+}
+
+
+/* Container for the registration box */
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #373636;
+}
+
+/* Box containing the registration form */
+.register-box {
+  background-color: white;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Title */
+h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* Input fields */
+.register-input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.register-input:focus {
+  border-color: #4facfe;
+  outline: none;
+}
+
+/* Register button */
+.register-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.register-btn:hover {
+  background-color:  #253435;
+}
+
+/* Login link */
+.login-link {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+}
+
+.login-btn {
+     background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    text-decoration: underline;
+    background-color: #4facfe;
+}
+
+.login-btn:hover {
+  color: #eeeef7;
+}
+
