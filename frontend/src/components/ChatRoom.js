@@ -8,9 +8,21 @@ import RoomSelector from './RoomSelector';
 const socket = io(process.env.REACT_APP_SOCKET_URL, {
   withCredentials: true,
   transports: ['websocket'],
-  reconnectionAttempts: 5,
+  upgrade: false,  // Force WebSocket only
+  reconnection: true,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
-  timeout: 20000
+  timeout: 20000,
+  forceNew: true
+});
+
+// Add these listeners
+socket.on('connect_error', (err) => {
+  console.error('Connection error:', err.message);
+});
+
+socket.io.on('reconnect_attempt', () => {
+  console.log('Attempting to reconnect...');
 });
 
 const ChatRoom = ({ username }) => {

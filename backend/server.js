@@ -33,23 +33,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Socket.IO configuration
+// Add this right after creating the server
 const io = socketIo(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ['websocket', 'polling'],
-  allowEIO3: true
+  transports: ['websocket'],
+  allowEIO3: true,
+  pingTimeout: 30000,  // Increased timeout
+  pingInterval: 5000
 });
 
-// WebSocket headers
-io.engine.on("headers", (headers, req) => {
-  if (allowedOrigins.includes(req.headers.origin)) {
-    headers["Access-Control-Allow-Origin"] = req.headers.origin;
-    headers["Access-Control-Allow-Credentials"] = "true";
-  }
+// Add these event listeners
+io.engine.on("connection_error", (err) => {
+  console.error('WebSocket connection error:', err);
 });
+
+// Modify your vercel.json
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
