@@ -9,9 +9,30 @@ const socket = io(process.env.REACT_APP_SOCKET_URL, {
   path: "/socket.io",
   transports: ["websocket"],
   upgrade: false,
-  reconnectionAttempts: 10,
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  randomizationFactor: 0.5,
   timeout: 20000,
+  forceNew: true,
   withCredentials: true
+});
+
+// Enhanced error handling
+socket.on('connect_error', (err) => {
+  console.error('Connection error:', err.message);
+  if (err.message.includes("websocket error")) {
+    // Implement fallback strategy
+    setTimeout(() => {
+      socket.io.opts.transports = ['polling', 'websocket'];
+      socket.connect();
+    }, 2000);
+  }
+});
+
+socket.on('connect_timeout', () => {
+  console.log('Connection timeout - attempting to reconnect');
 });
 
 // Add these listeners

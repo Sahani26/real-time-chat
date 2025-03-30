@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 // Socket.IO configuration
 // Add this right after creating the server
 // Add these WebSocket specific settings
-const io = socketIo(server, {
+const io = require('socket.io')(server, {
   cors: {
     origin: "https://real-time-chat-front-five.vercel.app",
     methods: ["GET", "POST"],
@@ -43,10 +43,29 @@ const io = socketIo(server, {
   },
   transports: ['websocket'],
   allowEIO3: true,
-  pingTimeout: 60000,
-  pingInterval: 25000
+  pingTimeout: 30000,
+  pingInterval: 15000,
+  perMessageDeflate: false
 });
 
+// Add this workaround for Vercel's serverless environment
+let connections = 0;
+setInterval(() => {
+  if (connections === 0) {
+    io.emit('heartbeat', Date.now());
+  }
+}, 10000);
+
+io.on('connection', (socket) => {
+  connections++;
+  console.log(`New connection (${connections} total)`);
+  
+  socket.on('disconnect', () => {
+    connections--;
+  });
+  
+  // ... rest of your socket handlers ...
+});
 // Add connection keep-alive
 setInterval(() => {
   io.emit('ping', Date.now());
