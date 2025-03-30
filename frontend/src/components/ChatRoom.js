@@ -5,7 +5,11 @@ import MessageInput from './MessageInput';
 import RoomSelector from './RoomSelector';
 import axios from 'axios';
 
-const socket = io('http://localhost:5000'); // Change to your backend URL
+// Using environment variables
+const apiUrl = process.env.REACT_APP_API_URL;
+const socketUrl = process.env.REACT_APP_SOCKET_URL;
+
+const socket = io(socketUrl); // Now using environment variable
 
 const ChatRoom = ({ username }) => {
   const [messages, setMessages] = useState([]);
@@ -19,7 +23,7 @@ const ChatRoom = ({ username }) => {
     // Fetch previous messages
     const fetchMessages = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/messages/${currentRoom}`);
+        const response = await axios.get(`${apiUrl}/api/messages/${currentRoom}`);
         setMessages(response.data);
       } catch (error) {
         console.error('Error fetching messages:', error);
