@@ -34,17 +34,23 @@ app.use(express.urlencoded({ extended: true }));
 
 // Socket.IO configuration
 // Add this right after creating the server
+// Add these WebSocket specific settings
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "https://real-time-chat-front-five.vercel.app",
     methods: ["GET", "POST"],
     credentials: true
   },
   transports: ['websocket'],
   allowEIO3: true,
-  pingTimeout: 30000,  // Increased timeout
-  pingInterval: 5000
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
+
+// Add connection keep-alive
+setInterval(() => {
+  io.emit('ping', Date.now());
+}, 15000);
 
 // Add these event listeners
 io.engine.on("connection_error", (err) => {

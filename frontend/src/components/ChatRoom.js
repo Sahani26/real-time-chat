@@ -6,14 +6,21 @@ import MessageInput from './MessageInput';
 import RoomSelector from './RoomSelector';
 
 const socket = io(process.env.REACT_APP_SOCKET_URL, {
-  withCredentials: true,
-  transports: ['websocket'],
-  upgrade: false,  // Force WebSocket only
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
+  path: "/socket.io",
+  transports: ["websocket"],
+  upgrade: false,
+  reconnectionAttempts: 10,
   timeout: 20000,
-  forceNew: true
+  withCredentials: true
+});
+
+// Add these listeners
+socket.on('connect_error', (err) => {
+  console.log('Connection error:', err.message);
+});
+
+socket.io.on('reconnect_attempt', () => {
+  socket.io.opts.transports = ['websocket'];
 });
 
 // Add these listeners
